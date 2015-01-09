@@ -1,0 +1,60 @@
+defaultTasks 'build', 'distZip2'
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'checkstyle'
+
+mainClassName = 'com.grossbart.forbiddenfunction.FFlimRunner'
+applicationName = 'forbiddenfunction'
+
+/*
+ * Now we define our application
+ */
+group = 'ForbiddenFunction'
+version = '0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+/*
+ * We specify our dependencies
+ */
+dependencies {
+  compile group: 'com.google.javascript', name: 'closure-compiler', version: 'r1918'
+  compile group: 'args4j', name: 'args4j', version: '2.0.12'
+  compile group: 'commons-io', name: 'commons-io', version: '2.0.1'
+  testCompile group: 'junit', name: 'junit', version: '4.+'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.grossbart.forbiddenfunction.ForbiddenFunction'
+    }
+}
+
+/*
+ * This task builds a single zip file containing our JAR, all
+ * the JARs our JAR depends on, and some scripts to run the program.
+ * It works just like the distZip from the Application plugin, but
+ * it adds our license and README file to the root of the distribution
+ * zip file.
+ */
+task distZip2(dependsOn: installApp, type: Zip) {
+    from(jar.outputs.files) {
+        into('lib')
+    }
+    
+    from(project.configurations.runtime) {
+        into('lib')
+    }
+    
+    from(startScripts.outputs.files) {
+        into('bin')
+    }
+
+    from('.') {
+        include 'LICENSE.txt'
+        include 'README.md'
+    }
+}
