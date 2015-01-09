@@ -4,7 +4,7 @@ apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'checkstyle'
 
-mainClassName = 'com.grossbart.forbiddenfunction.FFlimRunner'
+mainClassName = 'com.grossbart.forbiddenfunction.FFRunner'
 applicationName = 'forbiddenfunction'
 
 /*
@@ -29,7 +29,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'com.grossbart.forbiddenfunction.ForbiddenFunction'
+        attributes 'Main-Class': 'com.grossbart.forbiddenfunction.FFRunner'
     }
 }
 

@@ -69,33 +69,14 @@ public class ForbiddenFunction
     
     private List<Node> m_vars = new ArrayList<Node>();
     private List<Call> m_calls = new ArrayList<Call>();
-    private List<Call> m_examinedCalls = new ArrayList<Call>();
-    
-    private List<Node> m_libFuncs = new ArrayList<Node>();
-    private List<Node> m_allFuncs = new ArrayList<Node>();
-    private List<Node> m_keepers = new ArrayList<Node>();
+    private List<String> m_forbiddenFunc = new ArrayList<String>();
     
     private List<JSFile> m_files = new ArrayList<JSFile>();
     
     private ErrorManager m_errMgr;
-    private int m_funcCount;
     
     private String m_charset = "UTF-8";
     private boolean m_printTree = false;
-    
-    /**
-     * `Add the library contents to the compiler and prune them.
-     * 
-     * @param name   the file name of the added library
-     * @param code   the code contents 
-     * @param compLevel the compilation level 
-     * 
-     * @return the pruned file
-     */
-    protected String addLib(String name, String code, CompilationLevel compLevel)
-    {
-        return slim(name, code, true, compLevel);
-    }
     
     /**
      * Add a source file for compilation.
@@ -106,27 +87,15 @@ public class ForbiddenFunction
     {
         m_files.add(file);
     }
-    
+
     /**
-     * Prune all of the files which have been added to this compiler instance. 
-     *  
-     * @param compLevel the compilation level 
+     * Add a forbidden functio name
      * 
-     * @return the pruned result of this precompile
+     * @param functionName the forbidden function name
      */
-    public String prune(CompilationLevel compLevel)
+    public void addForbiddenFuncion(String functionName) 
     {
-        StringBuffer sb = new StringBuffer();
-        
-        for (JSFile file : m_files) {
-            if (file.isLib()) {
-                sb.append(file.getContent() + "\n");
-            } else {
-                slim(file.getName(), file.getContent(), false, compLevel);
-            }
-        }
-        
-        return addLib("combined_lib.js", sb.toString(), compLevel);
+        m_forbiddenFunc.add(functionName);
     }
     
     /**
@@ -158,27 +127,34 @@ public class ForbiddenFunction
         compiler.parse();
         return compiler.getErrorManager();
     }
+
+    /**
+     * Check all of the files which have been passed to the compiler
+     *  
+     */
+    public void check()
+    {
+        StringBuffer sb = new StringBuffer();
+        
+        for (JSFile file : m_files) {
+            slim(file.getName(), file.getContent());
+        }
+    }
     
     /**
      * Parse, compile, and slim the specified code
      * 
      * @param name      the name of the file to slim
      * @param code      JavaScript source code to compile.
-     * @param isLib     true if this is a library file and false otherwise
-     * @param compLevel the compilation level
      * 
      * @return The compiled version of the code.
      */
-    private String slim(String name, String code, boolean isLib, CompilationLevel compLevel)
+    private String slim(String name, String code)
     {
         Compiler compiler = new Compiler();
 
         CompilerOptions options = new CompilerOptions();
-        if (compLevel != null) {
-            // Advanced mode is used here, but additional options could be set, too.
-            compLevel.setOptionsForCompilationLevel(options);
-        }
-
+        
         // To get the complete set of externs, the logic in
         // CompilerRunner.getDefaultExterns() should be used here.
         JSSourceFile extern[] = {JSSourceFile.fromCode("externs.js", "")};
@@ -209,16 +185,10 @@ public class ForbiddenFunction
         //System.out.println("node before change: " + compiler.toSource());
         
         LOGGER.log(Level.INFO, "starting process...");
-        Node n = process(node, isLib);
+        Node n = process(node);
         
         LOGGER.log(Level.INFO, "Done processing...");
         LOGGER.log(Level.FINE, "m_calls: " + m_calls);
-        
-        m_funcCount = m_libFuncs.size();
-        
-        if (m_funcCount > 0) {
-            System.out.println("Removed " + (m_funcCount - m_keepers.size()) + " out of " + m_funcCount + " named functions.");
-        }
         
         if (m_printTree) {
             System.out.println("Tree after pruning:");
@@ -235,11 +205,10 @@ public class ForbiddenFunction
      * variables.
      * 
      * @param node   the node to process
-     * @param isLib  true if this node is from a library file and false otherwise
      * 
      * @return the original node reference
      */
-    private Node process(Node node, boolean isLib)
+    private Node process(Node node)
     {
         Iterator<Node> nodes = node.children().iterator();
         
@@ -268,7 +237,7 @@ public class ForbiddenFunction
                 addAssign(n);
             } 
             
-            process(n, isLib);
+            process(n);
         }
         
         return node;
@@ -330,9 +299,8 @@ public class ForbiddenFunction
      */
     private void addCall(String call, Node callNode, List<Call> calls)
     {
-        
         Call c = getCall(call, calls);
-        
+
         if (c == null) {
             c = new Call(call);
             calls.add(c);
@@ -342,6 +310,11 @@ public class ForbiddenFunction
              the count
              */
             c.incCount();
+        }
+
+        if (m_forbiddenFunc.contains(c.getName())) {
+            System.out.println(callNode.getStaticSourceFile() + ": line " + callNode.getLineno() +
+                               ", calling function " + c.getName() + " is forbidden");
         }
     }
     

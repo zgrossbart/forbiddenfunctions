@@ -28,6 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.javascript.jscomp.ErrorManager;
 
 import org.apache.commons.io.FileUtils;
+import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -127,20 +128,12 @@ public class FFRunner
             "Does not control errors or warnings for the JavaScript code under compilation")
     private LogLevel m_loggingLevel = LogLevel.WARNING;
     
-    @Option(name = "--js_output_file",
-        usage = "Primary output filename. If not specified, output is " +
-        "written to stdout")
-    private String m_output = null;
-    
-    @Option(name = "--js",
-        usage = "The javascript filename. You may specify multiple")
+    @Argument
     private List<String> m_js = Lists.newArrayList();
-    
-    @Option(name = "--lib_js", usage = "The javascript library filename. You may specify multiple", required = true)
-    private List<String> m_libJs = Lists.newArrayList();
-    
-    @Option(name = "--externs", usage = "The file containing javascript externs. You may specify multiple")
-    private List<String> m_externs = Lists.newArrayList();
+
+    @Option(name = "-funcs", required = true, 
+            usage = "The file containing list of forbidden function names. You may specify multiple")
+    private List<String> m_forbidden = Lists.newArrayList();
     
     @Option(name = "--charset",
         usage = "Input and output charset for all files. By default, we " +
@@ -152,22 +145,11 @@ public class FFRunner
         usage = "Prints out the parse tree and exits")
     private boolean m_printTree = false;
     
-    @Option(name = "--skip_gzip",
-        handler = BooleanOptionHandler.class,
-        usage = "Skip GZIPing the results")
-    private boolean m_skipGzip = false;
-    
     @Option(name = "--no_validate",
         handler = BooleanOptionHandler.class,
         usage = "Pass this argument to skip the pre-parse file validation step.  This is faster, but won't " +
                 "provide good error messages if the input files are invalid JavaScript.")
     private boolean m_preparse = true;
-    
-    @Option(name = "--separate_files",
-        handler = BooleanOptionHandler.class,
-        usage = "Pass this argument to separate library files and the regular files into different output files.  " + 
-            "By default they are combined into a single file.")
-    private boolean m_separate = false;
     
     @Option(name = "--flagfile",
         usage = "A file containing additional command-line options.")
@@ -213,19 +195,31 @@ public class FFRunner
             out.println("ERROR - Arguments in the file cannot contain --flagfile option.");
         }
     }
+
+    private void readForbiddenFuncts(ForbiddenFunction ff) 
+        throws IOException
+    {
+        for (String f : m_forbidden) {
+            File file = new File(f);
+            List<String> externs = FileUtils.readLines(file, m_charset);
+            
+            for (String extern : externs) {
+                ff.addForbiddenFuncion(extern);
+            }
+        }
+    }
     
     /**
      * Add files for compilation.
      * 
      * @param slim   the compiler instance
      * @param files  the files to add
-     * @param isLib  if these files are library files
      * 
      * @return true if the files were properly validated or false otherwise
      * @exception IOException
      *                   if there is an error reading the files
      */
-    private boolean addFiles(ForbiddenFunction slim, List<String> files, boolean isLib)
+    private boolean addFiles(ForbiddenFunction slim, List<String> files)
         throws IOException
     {
         for (String file : files) {
@@ -240,17 +234,11 @@ public class FFRunner
                 }
             }
             
-            if (!m_separate && !isLib) {
-                m_mainFiles.append(contents + "\n");
-            }
+            m_mainFiles.append(contents + "\n");
             
-            if (isLib) {
-                ForbiddenFunction.getLogger().log(Level.INFO, "Adding library file: " + f.getAbsoluteFile());
-            } else {
-                ForbiddenFunction.getLogger().log(Level.INFO, "Adding main file: " + f.getAbsoluteFile());
-            }
+            ForbiddenFunction.getLogger().log(Level.INFO, "Adding main file: " + f.getAbsoluteFile());
             
-            slim.addSourceFile(new JSFile(f.getName(), contents, isLib));
+            slim.addSourceFile(new JSFile(f.getName(), contents));
         }
         
         return true;
@@ -267,6 +255,26 @@ public class FFRunner
         // print the list of available options
         parser.printUsage(System.out);
         System.out.println();
+    }
+
+    private void check()
+        throws IOException
+    {
+        ForbiddenFunction ff = new ForbiddenFunction();
+
+        readForbiddenFuncts(ff);
+
+        ff.setLoggingLevel(m_loggingLevel.getLevel());
+
+        ForbiddenFunction.getLogger().log(Level.INFO, "Compiling with character set " + m_charset);
+        ff.setCharset(m_charset);
+
+        if (!addFiles(ff, m_js)) {
+            return;
+        }
+
+        ff.check();
+
     }
     
 
@@ -304,9 +312,7 @@ public class FFRunner
                 return;
             }
             
-            /*
-             * TODO call it
-             */
+            runner.check();
         } catch (Exception e) {
             e.printStackTrace();
         }

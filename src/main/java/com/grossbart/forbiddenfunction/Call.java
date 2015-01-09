@@ -93,6 +93,6 @@ public class Call
     @Override
     public String toString()
     {
-        return m_name + ": " + m_count;
+        return "Call: function named \"" + m_name + "\" called " + m_count + " time(s)";
     }
 }
