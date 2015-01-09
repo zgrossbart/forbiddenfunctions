@@ -40,7 +40,7 @@ FFRunner [options...] arguments...
 
 You can also call this as an API as part of a build.  To use this in a gradle build you would do something like this:
 
-<code>
+<pre><code>
 buildscript {
   repositories {
     mavenCentral()
@@ -77,6 +77,6 @@ task checkForbiddenFunctions(dependsOn: 'classes') {
         }
     }
 }
-</code>
+</code></pre>
 
-
+I might turn this into a first class Gradle plugin later.
