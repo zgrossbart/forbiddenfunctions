@@ -273,7 +273,14 @@ public class FFRunner
             return;
         }
 
-        ff.check();
+        List<String> errors = ff.check();
+
+        if (errors.size() > 0) {
+            System.out.println("There were forbidden functions.");
+            for (String err : errors) {
+                System.out.println(err);
+            }
+        }
 
     }
     

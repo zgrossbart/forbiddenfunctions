@@ -29,7 +29,7 @@ import com.google.javascript.jscomp.CompilationLevel;
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.ErrorManager;
-import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.jscomp.SourceFile;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 
@@ -70,6 +70,7 @@ public class ForbiddenFunction
     private List<Node> m_vars = new ArrayList<Node>();
     private List<Call> m_calls = new ArrayList<Call>();
     private List<String> m_forbiddenFunc = new ArrayList<String>();
+    private List<String> m_errors = new ArrayList<String>();
     
     private List<JSFile> m_files = new ArrayList<JSFile>();
     
@@ -116,11 +117,13 @@ public class ForbiddenFunction
 
         // To get the complete set of externs, the logic in
         // CompilerRunner.getDefaultExterns() should be used here.
-        JSSourceFile extern[] = {JSSourceFile.fromCode("externs.js", "")};
+        List<SourceFile> extern = new ArrayList<SourceFile>();
+        extern.add(SourceFile.fromCode("externs.js", ""));
 
         // The dummy input name "input.js" is used here so that any warnings or
         // errors will cite line numbers in terms of input.js.
-        JSSourceFile input[] = {JSSourceFile.fromCode(name, content)};
+        List<SourceFile> input = new ArrayList<SourceFile>();
+        input.add(SourceFile.fromCode(name, content));
         
         compiler.init(extern, input, options);
 
@@ -130,15 +133,19 @@ public class ForbiddenFunction
 
     /**
      * Check all of the files which have been passed to the compiler
+     * 
+     * @return a list containing errors about any forbidden functions
      *  
      */
-    public void check()
+    public List<String> check()
     {
         StringBuffer sb = new StringBuffer();
         
         for (JSFile file : m_files) {
-            slim(file.getName(), file.getContent());
+            check(file.getName(), file.getContent());
         }
+
+        return m_errors;
     }
     
     /**
@@ -146,10 +153,8 @@ public class ForbiddenFunction
      * 
      * @param name      the name of the file to slim
      * @param code      JavaScript source code to compile.
-     * 
-     * @return The compiled version of the code.
      */
-    private String slim(String name, String code)
+    private void check(String name, String code)
     {
         Compiler compiler = new Compiler();
 
@@ -157,11 +162,13 @@ public class ForbiddenFunction
         
         // To get the complete set of externs, the logic in
         // CompilerRunner.getDefaultExterns() should be used here.
-        JSSourceFile extern[] = {JSSourceFile.fromCode("externs.js", "")};
+        List<SourceFile> extern = new ArrayList<SourceFile>();
+        extern.add(SourceFile.fromCode("externs.js", ""));
 
         // The dummy input name "input.js" is used here so that any warnings or
         // errors will cite line numbers in terms of input.js.
-        JSSourceFile input[] = {JSSourceFile.fromCode(name, code)};
+        List<SourceFile> input = new ArrayList<SourceFile>();
+        input.add(SourceFile.fromCode(name, code));
         
         compiler.init(extern, input, options);
 
@@ -173,7 +180,7 @@ public class ForbiddenFunction
              Then there were errors parsing the file and we can't
              prune anything. 
              */
-            return "";
+            return;
         }
 
         Node node = compiler.getRoot();
@@ -194,10 +201,6 @@ public class ForbiddenFunction
             System.out.println("Tree after pruning:");
             System.out.println(node.toStringTree());
         }
-        
-        // The compiler is responsible for generating the compiled code; it is not
-        // accessible via the Result.
-        return compiler.toSource();
     }
     
     /**
@@ -313,8 +316,8 @@ public class ForbiddenFunction
         }
 
         if (m_forbiddenFunc.contains(c.getName())) {
-            System.out.println(callNode.getStaticSourceFile() + ": line " + callNode.getLineno() +
-                               ", calling function " + c.getName() + " is forbidden");
+            m_errors.add(callNode.getStaticSourceFile() + ": line " + callNode.getLineno() +
+                               ", calling forbidden function " + c.getName());
         }
     }
     
