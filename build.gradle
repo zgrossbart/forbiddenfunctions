@@ -1,9 +1,10 @@
-defaultTasks 'build', 'jar', 'distZip2'
+defaultTasks 'build', 'javadoc', 'jar', 'javadocJar', 'sourcesJar', 'install', 'distZip2'
 
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'checkstyle'
 apply plugin: 'maven'
+apply plugin: 'signing'
 
 mainClassName = 'com.grossbart.forbiddenfunction.FFRunner'
 applicationName = 'forbiddenfunction'
@@ -12,7 +13,7 @@ applicationName = 'forbiddenfunction'
  * Now we define our application
  */
 group = 'com.grossbart'
-version = '0.1-SNAPSHOT'
+version = '0.1'
 
 repositories {
     mavenCentral()
@@ -25,17 +26,12 @@ dependencies {
   compile group: 'com.google.javascript', name: 'closure-compiler', version: 'v20141215'
   compile group: 'args4j', name: 'args4j', version: '2.0.29'
   compile group: 'commons-io', name: 'commons-io', version: '2.1'
-  testCompile group: 'junit', name: 'junit', version: '4.+'
 }
 
 jar {
     manifest {
         attributes 'Main-Class': 'com.grossbart.forbiddenfunction.FFRunner'
     }
-}
-
-jar.doLast {
-    tasks.install.execute()
 }
 
 /*
@@ -62,4 +58,73 @@ task distZip2(dependsOn: installApp, type: Zip) {
         include 'LICENSE.txt'
         include 'README.md'
     }
+}
+
+/*
+ * This stuff all deals with deploying our artifacts
+ */
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from 'build/docs/javadoc'
+}
+ 
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+signing {
+    sign configurations.archives
+}
+
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourcesJar
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+ 
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+              authentication(userName: envDeployUser, password: envDeployPass)
+            }
+ 
+            pom.project {
+               name 'ForbiddenFunctions'
+               packaging 'jar'
+               description 'Forbidden Functions is a static JavaScript analyser which warns you about functions you don\'t want to allow.'
+               url 'https://github.com/zgrossbart/forbiddenfunctions'
+ 
+               scm {
+                   url 'scm:git@github.com:zgrossbart/forbiddenfunctions.git'
+                   connection 'scm:git@github.com:zgrossbart/forbiddenfunctions.git'
+                   developerConnection 'scm:git@github.com:zgrossbart/forbiddenfunctions.git'
+               }
+ 
+               licenses {
+                   license {
+                       name 'The Apache Software License, Version 2.0'
+                       url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                       distribution 'repo'
+                   }
+               }
+ 
+               developers {
+                   developer {
+                       id 'zgrossbart'
+                       name 'Zack Grossbart'
+                   }
+               }
+           }
+        }
+    }
+}
+
+uploadArchives.doFirst {
+    if (!project.hasProperty('envDeployUser')) {
+        throw new GradleScriptException("You need to set up the gradle.properties file before you can deploy.  Look at gradle.properties.sample.", null);
+    }   
 }
