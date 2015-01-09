@@ -1,9 +1,9 @@
-﻿Forbidden Functions
+Forbidden Functions
 ==================================================
 
 This is a JavaScript static analyzer which finds forbidden functions.  If you want make sure that your code never calls eval, or jQuery, or anything else this tool will automatically find function calls you don't want to allow.
 
-Building Forbidden Function
+Building Forbidden Functions
 --------------------------------------
 
 This project builds with [Gradle](http://www.gradle.org).  Build the application by running gradle in the project root directory.
@@ -80,3 +80,11 @@ task checkForbiddenFunctions(dependsOn: 'classes') {
 </code></pre>
 
 I might turn this into a first class Gradle plugin later.
+
+Creating the Forbidden File
+--------------------------------------
+
+The forbidden functions list contains all of the functions you don't want to allow in your project.  There's one entry per line.  For example, if you want to dissallow jQuery in your project you would have a forbidden functions file like this:
+
+<pre><code>$
+jquery</code></pre>
