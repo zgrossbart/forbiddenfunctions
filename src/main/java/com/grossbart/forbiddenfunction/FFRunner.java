@@ -20,6 +20,7 @@ package com.grossbart.forbiddenfunction;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
@@ -257,7 +258,7 @@ public class FFRunner
         System.out.println();
     }
 
-    private void check()
+    private List<String> check()
         throws IOException
     {
         ForbiddenFunction ff = new ForbiddenFunction();
@@ -270,18 +271,54 @@ public class FFRunner
         ff.setCharset(m_charset);
 
         if (!addFiles(ff, m_js)) {
-            return;
+            return new ArrayList<String>();
         }
 
-        List<String> errors = ff.check();
+        return ff.check();
+    }
 
-        if (errors.size() > 0) {
-            System.out.println("There were forbidden functions.");
-            for (String err : errors) {
-                System.out.println(err);
+    /**
+     * The main API entry point.
+     * 
+     * @param args   the arguments for this process
+     * 
+     * @return a list containing any errors
+     */
+
+    public static List<String> run(String[] args)
+    {
+        FFRunner runner = new FFRunner();
+        
+        // parse the command line arguments and options
+        CmdLineParser parser = new CmdLineParser(runner);
+        parser.setUsageWidth(80); // width of the error display area
+        
+        if (args.length == 0) {
+            printUsage(parser);
+            return new ArrayList<String>();
+        }
+        
+        try {
+            parser.parseArgument(args);
+        } catch (CmdLineException e) {
+            System.out.println(e.getMessage() + '\n');
+            printUsage(parser);
+            return new ArrayList<String>();
+        }
+        
+        try {
+            runner.processFlagFile(System.out);
+            
+            if (runner.m_displayHelp) {
+                parser.printUsage(System.out);
+                return new ArrayList<String>();
             }
+            
+            return runner.check();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<String>();
         }
-
     }
     
 
@@ -292,36 +329,12 @@ public class FFRunner
      */
     public static void main(String[] args)
     {
-        FFRunner runner = new FFRunner();
-        
-        // parse the command line arguments and options
-        CmdLineParser parser = new CmdLineParser(runner);
-        parser.setUsageWidth(80); // width of the error display area
-        
-        if (args.length == 0) {
-            printUsage(parser);
-            return;
-        }
-        
-        try {
-            parser.parseArgument(args);
-        } catch (CmdLineException e) {
-            System.out.println(e.getMessage() + '\n');
-            printUsage(parser);
-            return;
-        }
-        
-        try {
-            runner.processFlagFile(System.out);
-            
-            if (runner.m_displayHelp) {
-                parser.printUsage(System.out);
-                return;
+        List<String> errors = run(args);
+        if (errors.size() > 0) {
+            System.out.println("There were forbidden functions.");
+            for (String err : errors) {
+                System.out.println(err);
             }
-            
-            runner.check();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 }
