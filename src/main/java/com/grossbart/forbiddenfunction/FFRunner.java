@@ -1,6 +1,6 @@
 /******************************************************************************* 
  * 
- * Copyright 2011 Zack Grossbart
+ * Copyright 2015 Zack Grossbart
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,8 +223,14 @@ public class FFRunner
     private boolean addFiles(ForbiddenFunction slim, List<String> files)
         throws IOException
     {
+        ArrayList<File> readFiles = new ArrayList<File>();
+
         for (String file : files) {
             File f = new File(file);
+            if (readFiles.contains(f)) {
+                continue;
+            }
+
             String contents = FileUtils.readFileToString(f, m_charset);
             
             if (m_preparse) {
@@ -239,7 +245,7 @@ public class FFRunner
             
             ForbiddenFunction.getLogger().log(Level.INFO, "Adding main file: " + f.getAbsoluteFile());
             
-            slim.addSourceFile(new JSFile(f.getName(), contents));
+            slim.addSourceFile(new JSFile(f.getAbsolutePath(), contents));
         }
         
         return true;
@@ -287,6 +293,7 @@ public class FFRunner
 
     public static List<String> run(String[] args)
     {
+
         FFRunner runner = new FFRunner();
         
         // parse the command line arguments and options
