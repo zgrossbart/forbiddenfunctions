@@ -99,9 +99,9 @@ Once you've built the project you're ready to check for forbidden functions.  Th
 Forbidden functions will show you the functions you've forbidden like this:
 
 <pre><code>There were forbidden functions.
-/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 4, calling forbidden function $
-/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 4, calling forbidden function $
-/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 9, calling forbidden function jQuery
-/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 9, calling forbidden function jQuery
-/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 15, calling forbidden function $
-/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 15, calling forbidden function $</code></pre>
+main.js: line 4, calling forbidden function $
+main.js: line 4, calling forbidden function $
+main.js: line 9, calling forbidden function jQuery
+main.js: line 9, calling forbidden function jQuery
+main.js: line 15, calling forbidden function $
+main.js: line 15, calling forbidden function $</code></pre>
