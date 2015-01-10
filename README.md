@@ -87,4 +87,21 @@ Creating the Forbidden File
 The forbidden functions list contains all of the functions you don't want to allow in your project.  There's one entry per line.  For example, if you want to dissallow jQuery in your project you would have a forbidden functions file like this:
 
 <pre><code>$
-jquery</code></pre>
+jQuery</code></pre>
+
+Checking for Forbidden Functions
+--------------------------------------
+
+Once you've built the project you're ready to check for forbidden functions.  There's a sample file in the project that calls jQuery in two different ways.  We can check for this functions with this command:
+
+<pre><code>build/install/forbiddenfunction/bin/forbiddenfunction -funcs forbidden.txt main.js</code></pre>
+
+Forbidden functions will show you the functions you've forbidden like this:
+
+<pre><code>There were forbidden functions.
+/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 4, calling forbidden function $
+/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 4, calling forbidden function $
+/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 9, calling forbidden function jQuery
+/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 9, calling forbidden function jQuery
+/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 15, calling forbidden function $
+/Users/zackgrossbart/priv_work/forbiddenfunctions/main.js: line 15, calling forbidden function $</code></pre>

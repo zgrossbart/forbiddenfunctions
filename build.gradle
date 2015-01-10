@@ -13,7 +13,7 @@ applicationName = 'forbiddenfunction'
  * Now we define our application
  */
 group = 'com.grossbart'
-version = '0.1'
+version = '0.2-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -74,7 +74,9 @@ task sourcesJar(type: Jar) {
 }
 
 signing {
-    sign configurations.archives
+    if (project.hasProperty('signing.secretKeyRingFile')) {
+        sign configurations.archives
+    }
 }
 
 artifacts {
